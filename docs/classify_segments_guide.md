@@ -94,12 +94,35 @@ uv run python src/classify_segments.py --help
 ---
 
 ### 2. Programmatic Python Import
-You can import the module and run classification in your own custom Python pipelines.
+You can import both `classify_audio_segments` and `extract_audio_from_video` directly from `src/classify_segments.py` into your own Python pipelines.
 
+#### A. Extracting Audio from Video
+Extract the audio stream from any video file as a standard mono 16kHz WAV file:
+```python
+from pathlib import Path
+from src.classify_segments import extract_audio_from_video
+
+# Extract to a specified WAV file path
+wav_path = extract_audio_from_video(
+    video_path="video/2026-03-14_12-28-47.mp4",
+    output_audio_path="audio/my_audio.wav"
+)
+print(f"Extracted audio saved to: {wav_path}")
+
+# Extract to an auto-generated temporary WAV file path
+temp_wav_path = extract_audio_from_video(
+    video_path="video/2026-03-14_12-28-47.mp4"
+)
+print(f"Temporary audio saved to: {temp_wav_path}")
+# Note: Manually delete the temp file once finished to prevent disk clutter!
+```
+
+#### B. Slicing & Classifying Audio Segments
+Divide and run sound classification on overlapping 5-second segments:
 ```python
 from src.classify_segments import classify_audio_segments
 
-# Run segment-by-segment classification on a video file
+# Run segment-by-segment classification on a video or audio file
 results = classify_audio_segments(
     audio_path="video/2026-03-14_12-28-47.mp4",
     model_name="bioamla/ast-esc50",
@@ -115,6 +138,16 @@ for seg in results["segments"]:
     top_pred = seg["predictions"][0]
     print(f"[{start}s - {end}s] Predicted: {top_pred['class']} ({top_pred['confidence']:.2%})")
 ```
+
+---
+
+### 🤖 Tested Classification Models
+
+The following Hugging Face models are fully tested and supported in the classification module:
+
+* **`bioamla/ast-esc50`** *(Default)*: Audio Spectrogram Transformer finetuned on the ESC-50 dataset. Best suited for environmental sounds (animals, weather, domestic noises, human non-speech events). Exposes 50 distinct classes.
+* **`MIT/ast-finetuned-audioset-10-10-0.4593`**: Audio Spectrogram Transformer finetuned on AudioSet. Best suited for generic audio classification with 527 fine-grained sound classes.
+* **`laion/clap-htsat-unfused`**: Contrastive Language-Audio Pretraining model. Best suited for zero-shot audio classification with arbitrary user-defined text labels. Requires specifying candidate labels.
 
 ---
 

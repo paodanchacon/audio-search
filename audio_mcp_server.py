@@ -12,6 +12,8 @@ import json
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
+from src.classify_segments import classify_audio_segments, extract_audio_from_video
+
 
 # The MCP server. The name is how it shows up in the client.
 mcp = FastMCP("audio-search")
@@ -82,6 +84,53 @@ def search_transcript(recording: str, query: str) -> str:
     return _format(hits)
 
 
+@mcp.tool()
+def extract_audio(video_path: str, output_audio_path: str = None) -> str:
+    """Extracts the audio track from a video file and converts it to a 16kHz mono WAV file.
+
+    Args:
+        video_path: Path to the input video file.
+        output_audio_path: Optional destination path for the WAV file. If not provided, a temporary file is created.
+    """
+    try:
+        path = extract_audio_from_video(video_path, output_audio_path)
+        return f"Successfully extracted audio to: {path}"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
+def classify_audio(
+    audio_path: str,
+    model_name: str = "bioamla/ast-esc50",
+    overlap_seconds: float = 1.0,
+    candidate_labels: list[str] = None,
+    output_json_path: str = None
+) -> str:
+    """Slices an audio or video file into overlapping 5-second segments and classifies each segment using a pre-trained model.
+    If a video file is provided, its audio track is automatically extracted first.
+
+    Args:
+        audio_path: Path to the input audio or video file.
+        model_name: Hugging Face model identifier (e.g. "bioamla/ast-esc50").
+        overlap_seconds: Number of seconds of overlap between adjacent segments.
+        candidate_labels: Optional list of candidate labels for zero-shot classification (CLAP).
+        output_json_path: Optional path to write the output JSON results.
+    """
+    try:
+        results = classify_audio_segments(
+            audio_path=audio_path,
+            model_name=model_name,
+            overlap_seconds=overlap_seconds,
+            candidate_labels=candidate_labels,
+            output_json_path=output_json_path
+        )
+        return json.dumps(results, indent=2)
+    except Exception as e:
+        return f"Error: {e}"
+
+
 if __name__ == "__main__":
     # Runs over stdio — the transport Claude Desktop uses.
     mcp.run()
+

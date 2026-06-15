@@ -89,7 +89,12 @@ def classify_audio_segments(
 
     try:
         # 1. Determine device & Load classification pipeline
-        device = "mps" if torch.backends.mps.is_available() else "cpu"
+        if torch.cuda.is_available():
+            device = "cuda"
+        elif torch.backends.mps.is_available():
+            device = "mps"
+        else:
+            device = "cpu"
         task = "zero-shot-audio-classification" if "clap" in model_name.lower() else "audio-classification"
         classifier = pipeline(task, model=model_name, device=device)
 
@@ -146,20 +151,13 @@ def classify_audio_segments(
             else:
                 res = classifier(wav_bytes)
 
-            # Extract top 2 predictions
-            predictions_top2 = []
-            for pred in res[:2]:
-                predictions_top2.append({
-                    "class": pred["label"],
-                    "confidence": float(pred["score"])
-                })
-
-            # Pad with None if fewer than 2 predictions
+            # Extract top 2 predictions and pad with None if fewer
+            predictions_top2 = [
+                {"class": pred["label"], "confidence": float(pred["score"])}
+                for pred in res[:2]
+            ]
             while len(predictions_top2) < 2:
-                predictions_top2.append({
-                    "class": "None",
-                    "confidence": 0.0
-                })
+                predictions_top2.append({"class": "None", "confidence": 0.0})
 
             results["segments"].append({
                 "segment_index": idx,
