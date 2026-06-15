@@ -1,12 +1,20 @@
 import io
 import json
 import os
+# Suppress the Hugging Face unauthenticated request warning
+os.environ["HF_HUB_VERBOSITY"] = "error"
 import subprocess
 import tempfile
+import warnings
 import torch
 import soundfile as sf
 from pathlib import Path
 from transformers import pipeline
+
+# Suppress the PyTorch/NumPy read-only buffer warning
+warnings.filterwarnings("ignore", category=UserWarning, message="The given NumPy array is not writable")
+
+
 
 def extract_audio_from_video(video_path, output_audio_path=None):
     """
