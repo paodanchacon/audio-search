@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Media and results
+audio/
+video/
+results/
+__marimo__/
+*extracted_classification_results.json
